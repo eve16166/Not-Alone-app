@@ -1,0 +1,1238 @@
+cod aplicatie 
+// ===== PARTEA 1 =====
+package com.example.notalone
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import android.speech.tts.TextToSpeech
+import androidx.compose.ui.platform.LocalContext
+import java.util.Locale
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
+
+import androidx.compose.material3.*
+
+import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.ModalDrawerSheet
+
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+import com.example.notalone.ui.theme.NotAloneTheme
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material3.TextFieldDefaults
+val DarkBlue = Color(0xFF0F172A)
+val MidBlue = Color(0xFF1E3A8A)
+val LightBlue = Color(0xFF3B82F6)
+val CardPadding = 16.dp
+val ScreenPadding = 20.dp
+
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            NotAloneTheme {
+                AppNavigation()
+            }
+        }
+    }
+}
+
+@Composable
+fun AppBackground(content: @Composable () -> Unit) {
+    Box(
+        Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(listOf(DarkBlue, MidBlue)))
+    ) { content() }
+}
+
+@Composable
+fun PrimaryButton(
+    text: String,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF3B82F6),
+            contentColor = Color.White
+        )
+    ) {
+        Text(
+            text = text,
+            fontSize = 16.sp
+        )
+    }
+}
+
+@Composable
+fun AppCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(0.12f))
+
+    ) {
+        Column(Modifier.padding(18.dp), content = content)
+    }
+}
+
+
+@Composable
+fun BeautifulCard(text: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Box(
+            modifier = Modifier.padding(24.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = text,
+                fontSize = 18.sp
+            )
+        }
+    }
+}
+@Composable
+fun AppNavigation() {
+
+    val stack = remember { mutableStateListOf("welcome") }
+    val current = stack.last()
+
+    fun nav(s: String) = stack.add(s)
+    fun back() {
+        if (stack.size > 1) stack.removeLast()
+    }
+
+    when {
+
+        // 🌟 INTRO FLOW
+        current == "welcome" -> WelcomeScreen { nav("intro1") }
+        current == "intro1" -> IntroScreen1 { nav("intro2") }
+        current == "intro2" -> IntroScreen2 { nav("intro3") }
+        current == "intro3" -> IntroScreen3 { nav("intro4") }
+        current == "intro4" -> IntroScreen4 { nav("register") }
+
+        current == "register" -> RegisterScreen { nav("home") }
+
+        // 🏠 HOME
+        current == "home" -> HomeScreen { nav(it) }
+
+        // 👶 KIDS
+        current == "kids" -> KidsScreen(
+            onStartChat = { name -> nav("chat_$name") },
+            onBack = { back() }
+        )
+
+        // 💬 CHAT (FIXED)
+        current.startsWith("chat_") -> {
+            val name = current.removePrefix("chat_")
+
+            ChatScreen(
+                name = name,
+                onBack = { back() },
+                onSend = { nav("working") }
+            )
+        }
+
+        current == "working" -> WorkingScreen(onBack = { back() })
+
+        // 👨‍👩‍👧 ADULTS
+        current == "adultsMenu" -> AdultsMenuScreen(
+            onNavigate = { nav(it) },
+            onBack = { back() }
+        )
+
+        current == "danger_domestic" -> DomesticViolenceScreen { back() }
+
+        current == "danger_general" -> DangerGeneralScreen(
+            onClickMap = { nav("unavailable") },
+            onBack = { back() }
+        )
+
+        current == "danger_car" -> DangerCarScreen(
+            onClickMap = { nav("unavailable") },
+            onBack = { back() }
+        )
+
+        current == "unavailable" -> UnavailableScreen(
+            onRefresh = { nav("loading") },
+            onBack = { back() }
+        )
+
+        current == "loading" -> LoadingScreen(onBack = { back() })
+
+        current == "older" -> OlderHelpScreen { back() }
+
+        current == "safe" -> SafeHavenScreen(
+            onBack = { back() },
+            onNavigate = { nav(it) }
+        )
+        current == "safe_detail" -> DangerGeneralScreen(
+            onClickMap = { nav("unavailable") },
+            onBack = { back() }
+        )
+
+        // 🔥 SAFE LOADING
+        current.startsWith("safe_loading_") -> {
+            SafeLoadingScreen(
+                type = current,
+                onBack = { back() }
+            )
+        }
+
+        // ❌ FALLBACK
+        else -> {
+            Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Route not found:\n$current", color = Color.Red)
+            }
+        }
+    }
+}
+@Composable
+fun IntroTemplate(image: Int, title: String, subtitle: String, onNext: () -> Unit) {
+
+    Column(
+        Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(listOf(DarkBlue, MidBlue, LightBlue)))
+            .padding(24.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Spacer(Modifier.height(20.dp))
+
+        Image(
+            painterResource(image),
+            null,
+            Modifier.size(200.dp)
+        )
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+            Text(title, fontSize = 26.sp, color = Color.White)
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                subtitle,
+                fontSize = 14.sp,
+                color = Color.White.copy(0.7f)
+            )
+        }
+
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Button(
+                onClick = onNext,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = DarkBlue
+                ),
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("Next", fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+
+
+@Composable fun IntroScreen1(onNext: () -> Unit) =
+    IntroTemplate(R.drawable.intro1, "You are not alone", "We are here for you", onNext)
+
+@Composable fun IntroScreen2(onNext: () -> Unit) =
+    IntroTemplate(R.drawable.intro2, "Safe space", "Talk without fear", onNext)
+
+@Composable fun IntroScreen3(onNext: () -> Unit) =
+    IntroTemplate(R.drawable.intro3, "Help anytime", "24/7 support mindset", onNext)
+
+@Composable fun IntroScreen4(onNext: () -> Unit) =
+    IntroTemplate(R.drawable.intro4, "Stay protected", "Your safety matters", onNext)
+
+@Composable
+fun WelcomeScreen(onStart: () -> Unit) {
+
+    Column(
+        Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(listOf(DarkBlue, MidBlue, LightBlue)))
+            .padding(24.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Spacer(Modifier.height(40.dp))
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+            Text(
+                "NotAlone",
+                fontSize = 42.sp,
+                color = Color.White
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                "Support when you need it most",
+                fontSize = 16.sp,
+                color = Color.White.copy(0.7f)
+            )
+        }
+
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                PrimaryButton("Get started") {
+                    onStart()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RegisterScreen(onRegister: () -> Unit) {
+
+    var name by remember { mutableStateOf("") }
+    var surname by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var street by remember { mutableStateOf("") }
+    var number by remember { mutableStateOf("") }
+
+    Column(
+        Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(listOf(DarkBlue, MidBlue)))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        Text(
+            "Create account",
+            fontSize = 24.sp,
+            color = Color.White
+        )
+
+        RegisterField("Name", name) { name = it }
+        RegisterField("Surname", surname) { surname = it }
+        RegisterField("Phone", phone) { phone = it }
+        RegisterField("Street", street) { street = it }
+        RegisterField("Number", number) { number = it }
+
+        Spacer(Modifier.height(12.dp))
+
+        PrimaryButton("Continue") {
+            onRegister()
+        }
+    }
+}
+@Composable
+fun RegisterField(label: String, value: String, onChange: (String) -> Unit) {
+
+    Column {
+        Text(label, color = Color.White.copy(0.8f), fontSize = 12.sp)
+
+        TextField(
+            value = value,
+            onValueChange = onChange,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+}
+
+@Composable
+fun CustomTextField(label: String, value: String, onChange: (String) -> Unit) {
+    Column(Modifier.padding(bottom = 12.dp)) {
+
+        Text(label, color = Color.White)
+
+        TextField(
+            value = value,
+            onValueChange = onChange,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFF9FA8DA),
+                unfocusedContainerColor = Color(0xFF9FA8DA)
+            )
+        )
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(onNavigate: (String) -> Unit) {
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("NotAlone") }
+            )
+        }
+    ) { padding ->
+
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding)
+                .background(Brush.verticalGradient(listOf(DarkBlue, MidBlue)))
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+
+            Text(
+                "Choose category",
+                fontSize = 20.sp,
+                color = Color.White
+            )
+
+            MenuCard("Kids & Teens", "Safe chat for kids") { onNavigate("kids") }
+            MenuCard("Adults", "Help & safety tools") { onNavigate("adultsMenu") }
+            MenuCard("Safe Haven", "General protection") { onNavigate("safe") }
+            MenuCard("Older Help", "Support for seniors") { onNavigate("older") }
+        }
+    }
+}
+
+@Composable
+fun DrawerItem(text: String, onClick: () -> Unit) {
+    Text(
+        text,
+        modifier = Modifier.fillMaxWidth()
+            .clickable { onClick() }
+            .padding(20.dp)
+    )
+}
+
+@Composable
+fun MenuCard(title: String, description: String, onClick: () -> Unit) {
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(0.08f)
+        )
+    ) {
+        Column(Modifier.padding(20.dp)) {
+
+            Text(
+                title,
+                fontSize = 20.sp,
+                color = Color.White
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                description,
+                fontSize = 14.sp,
+                color = Color.White.copy(0.7f)
+            )
+        }
+    }
+}
+
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailScreen(type: String, onBack: () -> Unit) {
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(type.uppercase()) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Box(
+            Modifier.fillMaxSize()
+                .padding(padding)
+                .background(Brush.verticalGradient(listOf(DarkBlue, MidBlue))),
+            contentAlignment = Center
+        ) {
+            Text("Details about $type", color = Color.White)
+        }
+    }
+}
+
+
+//////////////////////////////////////////////////
+// KIDS SCREEN
+//////////////////////////////////////////////////
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable fun KidsScreen(onStartChat: (String) -> Unit, onBack: () -> Unit)
+{
+    var name by remember { mutableStateOf("") }
+    var avatar by remember { mutableStateOf(R.drawable.intro1) }
+    Scaffold( topBar = {
+        TopAppBar( title = { Text("Kids") },
+            navigationIcon = { IconButton(onClick = onBack)
+            { Icon(Icons.Default.ArrowBack, null) } } ) } ) { padding -> AppBackground { Column( Modifier.padding(padding).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp) ) { Image( painterResource(avatar), null,
+        Modifier.size(120.dp).clickable { avatar = if (avatar == R.drawable.intro1) R.drawable.intro2 else R.drawable.intro1 } )
+        TextField( value = name, onValueChange = { name = it },
+        placeholder = { Text("Your name") },
+        modifier = Modifier.fillMaxWidth() )
+        PrimaryButton("Start chat") { if (name.isNotBlank()) { onStartChat(name) } } } } } }
+//////////////////////////////////////////////////
+// CHAT
+////////////////////////////////////////////////// // CHAT
+
+
+
+data class ChatMessage(
+    val text: String,
+    val isUser: Boolean
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatScreen(
+    name: String,
+    onBack: () -> Unit,
+    onSend: () -> Unit
+) {
+
+    var msg by remember { mutableStateOf("") }
+    var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
+
+    val scrollState = rememberScrollState()
+
+    // 🔥 auto scroll
+    LaunchedEffect(messages.size) {
+        scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(name) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+
+            // 💬 MESSAGES
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(12.dp)
+                    .animateContentSize()
+            ) {
+
+                messages.forEach { message ->
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = if (message.isUser)
+                            Arrangement.End else Arrangement.Start
+                    ) {
+
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (message.isUser)
+                                    Color(0xFF3B82F6)
+                                else
+                                    Color(0xFF1E293B)
+                            )
+                        ) {
+                            Text(
+                                text = message.text,
+                                color = Color.White,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+
+            // ⬇️ INPUT
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                TextField(
+                    value = msg,
+                    onValueChange = { msg = it },
+                    placeholder = { Text("Type a message...") },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFF1E293B),
+                        unfocusedContainerColor = Color(0xFF1E293B),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    )
+                )
+
+                Spacer(Modifier.width(8.dp))
+
+                Button(
+                    onClick = {
+                        if (msg.isNotBlank()) {
+
+                            // 🧑 user message
+                            messages = messages + ChatMessage(msg, true)
+
+                            // 🤖 bot logic
+                            val reply = when {
+                                msg.contains("sad", true) ->
+                                    "I'm really sorry you're feeling like this 💙"
+                                msg.contains("scared", true) ->
+                                    "You're safe here. Talk to me."
+                                msg.contains("hey", true) ->
+                                    "Hey! How are you?"
+                                msg.contains("I'm not okey", true) ->
+                                    "I'm here. Tell me what happened. I can help you"
+                                msg.contains("can't trust", true) ->
+                                    "I'm here to help you. You have just to trust me so I can help you."
+                                msg.contains("bad ", true) ->
+                                    "I'm here. What happened."
+                                msg.contains("can you help", true) ->
+                                    "Sure! I'm here for you. You can talk with me about anything."
+                                msg.contains("argue", true) ->
+                                    "I'm here. Tell me what happened."
+                                msg.contains("I'm crying", true) ->
+                                    "Oh..I'm sorry! Calm down! I'm here for you. You're not alone anymore. Can you tell me what happened."
+                                msg.contains("v", true) ->
+                                    "I'm here. Tell me what happened."
+                                msg.contains("help", true) ->
+                                    "I'm here. Tell me what happened."
+                                else ->
+                                    "I understand. Tell me more."
+                            }
+
+                            messages = messages + ChatMessage(reply, false)
+
+                            msg = ""
+                        }
+                    },
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.size(50.dp)
+                ) {
+                    Text("➤")
+                }
+            }
+
+            // 🔥 NEXT
+            PrimaryButton("Next") {
+                onSend()
+            }
+        }
+    }
+}
+//////////////////////////////////////////////////
+// ADULTS MENU
+/////////////////////////////////////////////
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdultsMenuScreen(onNavigate: (String) -> Unit, onBack: () -> Unit) {
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Adults") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        AppBackground {
+
+            Column(
+                Modifier.padding(padding).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+
+                AppCard {
+                    Text("Domestic Violence", color = Color.White)
+                    PrimaryButton("Open") { onNavigate("danger_domestic") }
+                }
+
+                AppCard {
+                    Text("General Danger", color = Color.White)
+                    PrimaryButton("Open") { onNavigate("danger_general") }
+                }
+            }
+        }
+    }
+}
+
+
+
+//////////////////////////////////////////////////
+// DOMESTIC VIOLENCE
+//////////////////////////////////////////////////
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DomesticViolenceScreen(onBack: () -> Unit) {
+
+    var input by remember { mutableStateOf("") }
+    var saved by remember { mutableStateOf(listOf<String>()) }
+    var recording by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Emergency") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        AppBackground {
+
+            Column(
+                Modifier.padding(padding).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+
+                Text(
+                    "record a sound so your phone can recognize danger",
+                    color = Color.White.copy(0.7f)
+                )
+
+                Button(
+                    onClick = { recording = !recording },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (recording) Color.Red else Color.Gray
+                    )
+                ) {
+                    Text(if (recording) "Stop" else "Record")
+                }
+
+                Button(
+                    onClick = {},
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                    modifier = Modifier.fillMaxWidth().height(120.dp)
+                ) {
+                    Text("SOS", fontSize = 26.sp)
+                }
+
+                TextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                PrimaryButton("Save") {
+                    if (input.isNotBlank()) {
+                        saved = saved + input
+                        input = ""
+                    }
+                }
+                Column {
+                    Text("Saved words:", color = Color.White)
+
+                    saved.forEach {
+                        AppCard {
+                            Text(it, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////
+// DANGER CAR
+//////////////////////////////////////////////////
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DangerCarScreen(onClickMap: () -> Unit, onBack: () -> Unit) {
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Car Danger") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            Text("Tap the map")
+
+            Image(
+                painterResource(R.drawable.world_map),
+                null,
+                Modifier.size(250.dp).clickable { onClickMap() }
+            )
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UnavailableScreen(onRefresh: () -> Unit, onBack: () -> Unit) {
+
+    AppBackground {
+        Column(
+            Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                "Coming soon",
+                fontSize = 28.sp,
+                color = Color.White
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                "We're building a safe space for you ❤️",
+                color = Color.White.copy(0.7f)
+            )
+
+            Spacer(Modifier.height(30.dp))
+
+            PrimaryButton("Go back") {
+                onBack()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoadingScreen(onBack: () -> Unit) {
+
+    var showError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(2000)
+        showError = true
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Loading") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Box(
+            Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Center
+        ) {
+            if (!showError) {
+                CircularProgressIndicator()
+            } else {
+                Text(
+                    text = "Setting things up for you...",
+                    fontSize = 20.sp
+                )
+                CircularProgressIndicator(
+                    color = LightBlue
+                )
+            }
+        }
+    }
+}
+
+
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DangerGeneralScreen(onClickMap: () -> Unit, onBack: () -> Unit) {
+    animateDpAsState()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Danger") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+
+
+    ) { padding ->
+
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            Text("Tap map")
+
+            Image(
+                painterResource(R.drawable.world_map),
+                null,
+                Modifier.size(250.dp)
+                    .clickable { onClickMap() }
+            )
+        }
+    }
+}
+
+
+
+@Composable
+fun WorkingScreen(onBack: () -> Unit) {
+
+    AppBackground {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                text = "we're still working on this page\ntrying to make for you a safe place.",
+                color = Color.White,
+                fontSize = 18.sp
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            PrimaryButton("Go back") {
+                onBack()
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SafeHavenScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Safe Haven") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+
+            Text("Tap an emoji", color = Color.White.copy(0.7f))
+
+            Button(
+                onClick = { onNavigate("danger_general") },
+                modifier = Modifier.fillMaxWidth().height(80.dp)
+            ) { Text("💧") }
+
+            Button(
+                onClick = { onNavigate("danger_general") },
+                modifier = Modifier.fillMaxWidth().height(80.dp)
+            ) { Text("🚽") }
+
+            Button(
+                onClick = { onNavigate("danger_general") },
+                modifier = Modifier.fillMaxWidth().height(80.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) { Text("🆘") }
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SafeLoadingScreen(type: String, onBack: () -> Unit) {
+
+    var showMessage by remember { mutableStateOf(false) }
+
+    LaunchedEffect(type) {
+        kotlinx.coroutines.delay(1500)
+        showMessage = true
+    }
+
+    val message = when(type) {
+        "safe_loading_water" -> "We are getting you water 💧"
+        "safe_loading_toilet" -> "We are finding a safe bathroom 🚽"
+        "safe_loading_help" -> "We are sending help 🆘"
+        else -> "We are trying to help you ❤️"
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Connecting") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Box(
+            Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.Center
+        ) {
+
+            if (!showMessage) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(16.dp))
+                    Text("Trying to locate help...", color = Color.White)
+                }
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        message,
+                        fontSize = 22.sp,
+                        color = Color.White
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        "Stay calm. Help is being prepared.",
+                        color = Color.White.copy(0.7f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OlderHelpScreen(onBack: () -> Unit) {
+
+    var input by remember { mutableStateOf("") }
+    var saved by remember { mutableStateOf(listOf<String>()) }
+    var recording by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Older Help") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+//de rezolvat la fiecare buton apasat pe safe haven sa apra
+        //+de terminat kids chat screen si de actualizat faza cu older help
+        // ca la safeloading screen adica sa fie acele mesaje si sa scoata sunet sa introduc sunet
+        AppBackground {
+
+            Column(
+                Modifier.padding(padding).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+
+                Text(
+                    "Save words or sounds so your phone can detect danger",
+                    color = Color.White.copy(0.7f)
+                )
+
+                // 🔴 RECORD BUTTON
+                Button(
+                    onClick = { recording = !recording },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (recording) Color.Red else Color.Gray
+                    )
+                ) {
+                    Text(if (recording) "Stop Recording" else "Record Sound")
+                }
+
+                // 🆘 SOS BUTTON
+                Button(
+                    onClick = {},
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                    modifier = Modifier.fillMaxWidth().height(120.dp)
+                ) {
+                    Text("SOS", fontSize = 26.sp)
+                }
+
+                // ✍️ INPUT
+                TextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    placeholder = { Text("Add keyword (ex: help)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // 💾 SAVE
+                PrimaryButton("Save") {
+                    if (input.isNotBlank()) {
+                        saved = saved + input
+                        input = ""
+                    }
+                }
+
+                // 📌 AFIȘARE CUVINTE SALVATE (asta lipsea și la tine 🔥)
+                Column {
+                    Text("Saved words:", color = Color.White)
+
+                    saved.forEach {
+                        AppCard {
+                            Text(it, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SafeDetailScreen(text: String, onBack: () -> Unit) {
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Safe Action") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                text = text,
+                fontSize = 28.sp,
+                color = Color.White
+            )
+        }
+    }
+}
